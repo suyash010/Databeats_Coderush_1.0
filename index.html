@@ -1,21 +1,186 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Schizophrenia Detection</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManoSwastik EDF Classifier</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h2>EEG Feature Input</h2>
-    <form action="/predict" method="POST">
-        {% for i in range(1, 11) %}
-        <label for="feature{{i}}">Feature {{i}}:</label>
-        <input type="text" name="feature{{i}}" required><br><br>
-        {% endfor %}
-        <input type="submit" value="Predict">
-    </form>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                <h1>ManoSwastik</h1>
+            </div>
+            <p class="subtitle">Advanced EDF Signal Classification</p>
+        </header>
 
-    {% if result %}
-    <h3>{{ result }}</h3>
-    {% endif %}
+        <main class="main-content">
+            <div class="upload-section">
+                <div class="upload-card">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <h3>Upload EDF File</h3>
+                        <p>Drag and drop your .edf file here or click to browse</p>
+                        <input type="file" id="fileInput" accept=".edf" hidden>
+                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                            Choose File
+                        </button>
+                    </div>
+                    
+                    <div class="file-info" id="fileInfo" style="display: none;">
+                        <div class="file-details">
+                            <span class="file-name" id="fileName"></span>
+                            <span class="file-size" id="fileSize"></span>
+                        </div>
+                        <button class="classify-btn" id="classifyBtn">
+                            <span class="btn-text">Classify Signal</span>
+                            <div class="spinner" style="display: none;"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-card">
+                    <h3>Classification Result</h3>
+                    <div class="result-display">
+                        <div class="result-badge" id="resultBadge">
+                            <span class="result-text" id="resultText"></span>
+                        </div>
+                        <div class="confidence-score">
+                            <span>Confidence: </span>
+                            <span id="confidenceScore">--</span>
+                        </div>
+                    </div>
+                    <div class="result-description" id="resultDescription"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 ManoSwastik. Advanced neural signal analysis technology.</p>
+        </footer>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const classifyBtn = document.getElementById('classifyBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultBadge = document.getElementById('resultBadge');
+        const resultText = document.getElementById('resultText');
+        const confidenceScore = document.getElementById('confidenceScore');
+        const resultDescription = document.getElementById('resultDescription');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.edf')) {
+                alert('Please select a valid .edf file');
+                return;
+            }
+
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            uploadArea.style.display = 'none';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        classifyBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Show loading state
+            classifyBtn.querySelector('.btn-text').textContent = 'Classifying...';
+            classifyBtn.querySelector('.spinner').style.display = 'inline-block';
+            classifyBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Replace with your Flask API endpoint
+                const response = await fetch('/api/classify', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                // Display results
+                displayResults(result);
+                
+            } catch (error) {
+                console.error('Classification error:', error);
+                alert('Error during classification. Please try again.');
+            } finally {
+                // Reset button state
+                classifyBtn.querySelector('.btn-text').textContent = 'Classify Signal';
+                classifyBtn.querySelector('.spinner').style.display = 'none';
+                classifyBtn.disabled = false;
+            }
+        });
+
+        function displayResults(result) {
+            // Assuming result format: { prediction: 1, confidence: 0.95 }
+            const isHealthy = result.prediction === 1;
+            
+            resultText.textContent = isHealthy ? 'Healthy' : 'Schizophrenia';
+            resultBadge.className = result-badge ${isHealthy ? 'healthy' : 'schizophrenia'};
+            confidenceScore.textContent = ${(result.confidence * 100).toFixed(1)}%;
+            
+            resultDescription.textContent = isHealthy 
+                ? 'The EDF signal analysis indicates normal brain activity patterns.'
+                : 'The EDF signal analysis indicates patterns consistent with schizophrenia.';
+            
+            resultsSection.style.display = 'block';
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Reset functionality
+        function resetUpload() {
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            uploadArea.style.display = 'flex';
+            resultsSection.style.display = 'none';
+        }
+    </script>
 </body>
 </html>
