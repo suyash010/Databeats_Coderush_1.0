@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Schizophrenia Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>EEG Feature Input</h2>
+    <form action="/predict" method="POST">
+        {% for i in range(1, 11) %}
+        <label for="feature{{i}}">Feature {{i}}:</label>
+        <input type="text" name="feature{{i}}" required><br><br>
+        {% endfor %}
+        <input type="submit" value="Predict">
+    </form>
+
+    {% if result %}
+    <h3>{{ result }}</h3>
+    {% endif %}
+</body>
+</html>
