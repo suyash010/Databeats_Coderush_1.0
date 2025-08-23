@@ -14,7 +14,7 @@ st.caption("Upload EEG/EDF files to analyze risk")
 # ----------------- LOAD MODEL -----------------
 @st.cache_resource
 def load_keras_model():
-    model = load_model("schizophrenia_model.keras")
+    model = load_model("RAW_MODEL.keras")
     return model
 
 model = load_keras_model()
@@ -68,3 +68,4 @@ if uploaded_file is not None:
     st.markdown(f"### 🔢 Probabilities: `{prediction.tolist()[0]}`")
 else:
     st.info("👆 Upload a .edf file to begin analysis")
+
