@@ -2,3 +2,7 @@ flask
 tensorflow
 numpy
 gunicorn
+streamlit
+pandas
+pyedflib
+tensorflow
